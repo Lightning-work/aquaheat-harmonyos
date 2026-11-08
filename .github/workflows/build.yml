@@ -108,13 +108,14 @@ jobs:
       # SDK 类型签名侦查（核对 spp/connection/ble 的真实 API）
       - name: Inspect SDK typings
         run: |
-          API="$CLT_ROOT/sdk/default/openharmony/ets/api"
-          echo "--- bluetooth dir ---"
-          ls "$API/bluetooth" 2>/dev/null | head -20 || true
+          echo "--- all bluetooth d.ts ---"
+          find "$CLT_ROOT/sdk" -name '*.d.ts' -path '*bluetooth*' | head -20 || true
+          echo "--- spp anywhere ---"
+          grep -rln "sppConnect" "$CLT_ROOT/sdk" --include='*.d.ts' | head -10 || true
           echo "--- spp signatures ---"
-          grep -n "function sppConnect\|function sppWrite\|function sppCloseClientSocket\|SppReadData\|SppConnectOptions\|interface BondedDevice\|getPairedDevices" "$API/bluetooth/"*.d.ts 2>/dev/null | head -20 || true
-          echo "--- ble write signature ---"
-          grep -n "writeCharacteristicValue\|setCharacteristicChangeNotification" "$API/bluetooth/ble.d.ts" 2>/dev/null | head -10 || true
+          grep -rn "function sppConnect\|function sppWrite\|function sppCloseClientSocket\|SppReadData\|SppConnectOptions\|getPairedDevices" "$CLT_ROOT/sdk" --include='*.d.ts' | head -20 || true
+          echo "--- ble charValue signatures ---"
+          grep -rn "characteristicValue\|writeCharacteristicValue(" "$CLT_ROOT/sdk" --include='ble*.d.ts' | head -15 || true
 
       - name: Build HAP (debug, unsigned)
         run: |
