@@ -1,11 +1,10 @@
 /**
  * SppClient.ets —— 鸿蒙经典蓝牙 SPP（RFCOMM）透传通道
- * 支持 JDY-31-SPP / HC-05 等经典蓝牙串口模组。
- * 前提：已在系统蓝牙完成配对；此处列出已配对设备并直连 RFCOMM。
- * 注意：spp 不在 @kit.ConnectivityKit 导出列表中，直接从 @ohos.bluetooth.spp 引入。
+ * SDK 26：SPP API 位于 @ohos.bluetooth.socket（原 @ohos.bluetooth.spp 已并入）。
+ * 前提：已在系统蓝牙完成配对（connection.getPairedDevices 仅返回地址字符串）。
  */
 import { connection } from '@kit.ConnectivityKit';
-import spp from '@ohos.bluetooth.spp';
+import socket from '@ohos.bluetooth.socket';
 
 const SPP_UUID: string = '00001101-0000-1000-8000-00805f9b34fb';
 
@@ -19,7 +18,7 @@ export class SppTransport {
   private connectedName: string = '';
   private readHandler: ((bytes: Uint8Array) => void) | null = null;
 
-  /** 列出系统已配对的经典蓝牙设备（SDK 26 只返回设备地址字符串数组） */
+  /** 列出系统已配对的经典蓝牙设备（仅地址字符串，名称由用户自行识别 MAC） */
   async listPaired(): Promise<PairedDevice[]> {
     const out: PairedDevice[] = [];
     const devices = await connection.getPairedDevices();
@@ -38,14 +37,23 @@ export class SppTransport {
     onData: (bytes: Uint8Array) => void, onDisconnect: () => void): Promise<void> {
     this.connectedName = name;
     this.readHandler = onData;
-    const opt: spp.SppConnectOptions = {
+    const opt: socket.SppOptions = {
       uuid: SPP_UUID,
       secure: true,
-      type: spp.SppType.SPP_RFCOMM,
+      type: socket.SppType.SPP_RFCOMM,
     };
-    this.socketId = await spp.sppConnect(deviceId, opt);
+    this.socketId = await new Promise<number>((resolve: (v: number) => void, reject: (e: Error) => void) => {
+      socket.sppConnect(deviceId, opt, (err, id) => {
+        if (err) {
+          const e = new Error(`sppConnect 失败 · ${err.message ?? JSON.stringify(err)}`);
+          reject(e);
+        } else {
+          resolve(id);
+        }
+      });
+    });
 
-    spp.on('sppRead', (data: spp.SppReadData) => {
+    socket.on('sppRead', (data: socket.SppReadData) => {
       if (data.clientId === this.socketId && this.readHandler !== null) {
         const ab: ArrayBuffer = data.data;
         if (ab.byteLength > 0) {
@@ -56,6 +64,7 @@ export class SppTransport {
 
     // 断连探测依赖写失败 + 轮询超时暴露
     void onDisconnect;
+    void this.connectedName;
   }
 
   /** 写透传字节（SPP 无 MTU 分片限制，整帧一次写入） */
@@ -63,13 +72,14 @@ export class SppTransport {
     if (this.socketId < 0) {
       throw new Error('SPP 未连接');
     }
-    await spp.sppWrite(this.socketId, bytes.buffer);
+    const buf: ArrayBuffer = bytes.buffer as ArrayBuffer;
+    await socket.sppWriteAsync(this.socketId, buf);
   }
 
   disconnect(): void {
     try {
       if (this.socketId >= 0) {
-        spp.sppCloseClientSocket(this.socketId);
+        socket.sppCloseClientSocket(this.socketId);
       }
     } catch (e) {
       // 忽略关闭异常
