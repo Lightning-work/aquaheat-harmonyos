@@ -19,14 +19,14 @@ export class SppTransport {
   private connectedName: string = '';
   private readHandler: ((bytes: Uint8Array) => void) | null = null;
 
-  /** 列出系统已配对的经典蓝牙设备 */
+  /** 列出系统已配对的经典蓝牙设备（SDK 26 只返回设备地址字符串数组） */
   async listPaired(): Promise<PairedDevice[]> {
     const out: PairedDevice[] = [];
     const devices = await connection.getPairedDevices();
-    for (const d of devices) {
+    for (const mac of devices) {
       const item: PairedDevice = {
-        deviceId: d.deviceId,
-        deviceName: d.deviceName && d.deviceName.length > 0 ? d.deviceName : d.deviceId,
+        deviceId: mac,
+        deviceName: mac,
       };
       out.push(item);
     }
