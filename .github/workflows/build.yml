@@ -140,20 +140,20 @@ jobs:
 
       # ---- 自动签名（需仓库 Secrets: P12_BASE64 / P12_PASSWORD / CER_BASE64 / P7B_BASE64）----
       - name: Setup Java for signing
-        if: secrets.P12_BASE64 != ''
+        if: vars.SIGNING_ENABLED == '1'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Locate hap-sign-tool
-        if: secrets.P12_BASE64 != ''
+        if: vars.SIGNING_ENABLED == '1'
         run: |
           find "$CLT_ROOT/sdk" -iname 'hap-sign-tool*' | head -5 || true
           find "$CLT_ROOT" -iname '*sign-tool*' | head -5 || true
 
       - name: Decode signing materials
-        if: secrets.P12_BASE64 != ''
+        if: vars.SIGNING_ENABLED == '1'
         run: |
           echo "$P12_BASE64" | base64 -d > "$HOME/aquaheat.p12"
           echo "$CER_BASE64" | base64 -d > "$HOME/aquaheat.cer"
@@ -165,7 +165,7 @@ jobs:
           P7B_BASE64: ${{ secrets.P7B_BASE64 }}
 
       - name: Sign HAP (debug)
-        if: secrets.P12_BASE64 != ''
+        if: vars.SIGNING_ENABLED == '1'
         run: |
           set -e
           UNSIGNED=$(find entry/build -name '*unsigned*.hap' | head -1)
@@ -186,7 +186,7 @@ jobs:
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
 
       - name: Upload signed HAP
-        if: secrets.P12_BASE64 != ''
+        if: vars.SIGNING_ENABLED == '1'
         uses: actions/upload-artifact@v4
         with:
           name: aquaheat-hap-signed
