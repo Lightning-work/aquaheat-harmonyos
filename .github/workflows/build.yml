@@ -26,6 +26,8 @@ jobs:
           path: ~/harmonyos
           key: clt-commandline-tools-linux-x64-26.0.0.865
           restore-keys: clt-
+        # 任务失败也保存缓存，加速迭代
+        save-always: true
 
       - name: Resolve commandline-tools URL
         id: url
@@ -84,6 +86,17 @@ jobs:
           node --version
           echo "DEVECO_SDK_HOME=$DEVECO_SDK_HOME"
           ls "$CLT_ROOT/bin" | head -10
+
+      # SDK 版本事实诊断（适配配置用）
+      - name: Dump SDK info
+        run: |
+          echo "--- sdk/default tree ---"
+          find "$CLT_ROOT/sdk/default" -maxdepth 2 | head -30 || true
+          echo "--- json metadata ---"
+          find "$CLT_ROOT/sdk" -maxdepth 4 -name '*.json' | head -10 || true
+          for f in $(find "$CLT_ROOT/sdk" -maxdepth 4 -name '*.json' | head -5); do
+            echo "== $f =="; head -c 600 "$f"; echo
+          done
 
       - name: Build HAP (debug, unsigned)
         run: |
