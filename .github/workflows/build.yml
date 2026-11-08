@@ -116,6 +116,11 @@ jobs:
           grep -rn "function sppConnect\|function sppWrite\|function sppCloseClientSocket\|SppReadData\|SppConnectOptions\|getPairedDevices" "$CLT_ROOT/sdk" --include='*.d.ts' | head -20 || true
           echo "--- ble charValue signatures ---"
           grep -rn "characteristicValue\|writeCharacteristicValue(" "$CLT_ROOT/sdk" --include='ble*.d.ts' | head -15 || true
+          echo "--- socket.d.ts SppOptions/SppType/sppRead ---"
+          SOCK="$CLT_ROOT/sdk/default/openharmony/ets/api/@ohos.bluetooth.socket.d.ts"
+          grep -n "interface SppOptions" -A 14 "$SOCK" | head -20 || true
+          grep -n "enum SppType" -A 8 "$SOCK" | head -12 || true
+          grep -n "sppRead\|interface SppReadData" -A 8 "$SOCK" | head -20 || true
 
       - name: Build HAP (debug, unsigned)
         run: |
