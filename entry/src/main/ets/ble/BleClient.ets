@@ -119,7 +119,7 @@ export class BleTransport {
 
     // 订阅 notify 数据
     this.gatt.on('BLECharacteristicChange', (r: ble.BLECharacteristic) => {
-      const v = r.value;
+      const v: ArrayBuffer | null = r.characteristicValue;
       if (v && v.byteLength > 0) {
         onData(new Uint8Array(v));
       }
@@ -205,12 +205,14 @@ export class BleTransport {
       for (let off = 0; off < bytes.length; off += CHUNK_SIZE) {
         const end = Math.min(off + CHUNK_SIZE, bytes.length);
         const chunk = bytes.slice(off, end);
+        const buf: ArrayBuffer = chunk.buffer as ArrayBuffer;
         const ch: ble.BLECharacteristic = {
           serviceUuid: this.tx.serviceUuid,
           characteristicUuid: this.tx.characteristicUuid,
           descriptors: [],
+          characteristicValue: buf,
         };
-        await this.gatt.writeCharacteristicValue(ch, chunk.buffer, this.txWriteType);
+        await this.gatt.writeCharacteristicValue(ch, this.txWriteType);
         if (end < bytes.length) {
           await sleep(CHUNK_GAP_MS);
         }
