@@ -70,6 +70,7 @@ jobs:
           ROOT=$(find . -maxdepth 1 -type d \( -name 'commandline-tools*' -o -name 'command-line-tools*' \) | head -1)
           echo "CLT_ROOT=$PWD/$ROOT" >> "$GITHUB_ENV"
           echo "DEVECO_SDK_HOME=$PWD/$ROOT/sdk" >> "$GITHUB_ENV"
+          echo "HOS_SDK_HOME=$PWD/$ROOT/sdk" >> "$GITHUB_ENV"
           echo "HDC_HOME=$PWD/$ROOT/sdk/default/openharmony/toolchains" >> "$GITHUB_ENV"
           chmod +x "$ROOT/bin/"* 2>/dev/null || true
           chmod +x "$ROOT/tool/node/bin/"* 2>/dev/null || true
