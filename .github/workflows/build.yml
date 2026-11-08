@@ -105,6 +105,17 @@ jobs:
             echo "== $f =="; head -c 600 "$f"; echo
           done
 
+      # SDK 类型签名侦查（核对 spp/connection/ble 的真实 API）
+      - name: Inspect SDK typings
+        run: |
+          API="$CLT_ROOT/sdk/default/openharmony/ets/api"
+          echo "--- bluetooth dir ---"
+          ls "$API/bluetooth" 2>/dev/null | head -20 || true
+          echo "--- spp signatures ---"
+          grep -n "function sppConnect\|function sppWrite\|function sppCloseClientSocket\|SppReadData\|SppConnectOptions\|interface BondedDevice\|getPairedDevices" "$API/bluetooth/"*.d.ts 2>/dev/null | head -20 || true
+          echo "--- ble write signature ---"
+          grep -n "writeCharacteristicValue\|setCharacteristicChangeNotification" "$API/bluetooth/ble.d.ts" 2>/dev/null | head -10 || true
+
       - name: Build HAP (debug, unsigned)
         run: |
           set -e
