@@ -4,21 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       clt_url:
-        description: 'commandline-tools Linux zip 直链（留空则用仓库变量/默认候选）'
+        description: 'commandline-tools Linux zip 直链（留空则用仓库变量）'
         required: false
         default: ''
   push:
     branches: [main, master]
     paths: ['**/*.ets', '**/*.json5', '**/*.ts', '.github/workflows/*.yml']
-
-env:
-  # ⭐ 首次使用：到这里下载 commandline-tools（Linux x64）zip 的直链：
-  #   https://developer.huawei.com/consumer/cn/deveco-studio/ → 「命令行工具」→ 需登录华为账号
-  #   然后把直链填到 仓库 Settings → Secrets and variables → Actions → Variables →
-  #   新建变量 COMMANDLINE_TOOLS_URL（或每次手动触发时填输入框）。
-  #   候选地址（社区镜像，若仓库变量为空会依次尝试）：
-  CLT_URL_CANDIDATES: >-
-    https://github.com/harmonyos-dev/hos-sdk/releases/latest/download/commandline-tools-linux-x64.zip
 
 jobs:
   build:
@@ -26,6 +17,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 2.2GB 工具链缓存（直链更新时手动删缓存即可）
+      - name: Cache commandline-tools
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/harmonyos
+          key: clt-commandline-tools-linux-x64-26.0.0.865
+          restore-keys: clt-
 
       - name: Resolve commandline-tools URL
         id: url
@@ -35,24 +35,30 @@ jobs:
           if [ -z "$URL" ]; then
             URL="${{ vars.COMMANDLINE_TOOLS_URL }}"
           fi
-          if [ -z "$URL" ]; then
-            URL="$CLT_URL_CANDIDATES"
-          fi
-          echo "Using URL: $URL"
+          echo "Using URL: ${URL:0:80}..."
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Download & setup commandline-tools
+      - name: Download & unzip commandline-tools
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           set -e
           mkdir -p "$HOME/harmonyos" && cd "$HOME/harmonyos"
-          for i in 1 2 3; do
-            curl -fL --retry 3 -o clt.zip "${{ steps.url.outputs.url }}" && break
-            echo "download failed, attempt $i"; sleep 5
-            if [ "$i" = "3" ]; then exit 1; fi
-          done
-          unzip -q clt.zip
+          if [ ! -f clt.zip ]; then
+            for i in 1 2 3; do
+              curl -fL --retry 3 -o clt.zip "${{ steps.url.outputs.url }}" && break
+              echo "download failed, attempt $i"; sleep 5
+              if [ "$i" = "3" ]; then exit 1; fi
+            done
+          fi
+          if [ ! -d command-line-tools ]; then
+            unzip -q clt.zip
+          fi
           ls -la
-          # 目录结构兼容：commandline-tools-x64/ 或 command-line-tools/
+
+      - name: Setup env (always)
+        run: |
+          set -e
+          cd "$HOME/harmonyos"
           ROOT=$(find . -maxdepth 1 -type d \( -name 'commandline-tools*' -o -name 'command-line-tools*' \) | head -1)
           echo "CLT_ROOT=$PWD/$ROOT" >> "$GITHUB_ENV"
           echo "DEVECO_SDK_HOME=$PWD/$ROOT/sdk" >> "$GITHUB_ENV"
@@ -62,19 +68,29 @@ jobs:
           echo "$PWD/$ROOT/bin" >> "$GITHUB_PATH"
           echo "$PWD/$ROOT/tool/node/bin" >> "$GITHUB_PATH"
 
+      # hvigor 启动器强制要求用户目录存在 .npmrc（错误码 00303137）
+      # @ohos 作用域包（hvigor 等）发布在 repo.harmonyos.com/npm/
+      - name: Configure ~/.npmrc
+        run: |
+          cat > ~/.npmrc <<'NPMRC'
+          registry=https://repo.huaweicloud.com/repository/npm/
+          @ohos:registry=https://repo.harmonyos.com/npm/
+          NPMRC
+          cat ~/.npmrc
+
       - name: Verify toolchain
         run: |
           set -e
-          hvigorw --version || ls "$CLT_ROOT/bin"
           node --version
           echo "DEVECO_SDK_HOME=$DEVECO_SDK_HOME"
+          ls "$CLT_ROOT/bin" | head -10
 
       - name: Build HAP (debug, unsigned)
         run: |
           set -e
           hvigorw assembleHap --mode module -p product=default --no-daemon
           echo "---- outputs ----"
-          find . -name '*.hap' -o -name 'unsigned*' | head -20
+          find . -name '*.hap' | head -20
 
       - name: Upload HAP artifact
         uses: actions/upload-artifact@v4
