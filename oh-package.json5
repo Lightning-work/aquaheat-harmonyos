@@ -2,6 +2,7 @@
   "name": "aquaheat-harmonyos",
   "version": "1.0.0",
   "description": "AquaHeat Console 热水器上位机 · 鸿蒙 NEXT 原生版",
+  "modelVersion": "6.0.0",
   "main": "",
   "author": "",
   "license": "MIT",
