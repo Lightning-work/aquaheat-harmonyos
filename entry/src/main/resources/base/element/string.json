@@ -1,0 +1,8 @@
+{
+  "string": [
+    { "name": "app_name", "value": "AquaHeat Console" },
+    { "name": "module_desc", "value": "热水器蓝牙上位机" },
+    { "name": "ability_desc", "value": "热水器蓝牙上位机主界面" },
+    { "name": "ble_reason", "value": "用于扫描并连接热水器蓝牙模组进行监控与控制" }
+  ]
+}
