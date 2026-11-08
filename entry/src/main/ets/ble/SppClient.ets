@@ -2,8 +2,10 @@
  * SppClient.ets —— 鸿蒙经典蓝牙 SPP（RFCOMM）透传通道
  * 支持 JDY-31-SPP / HC-05 等经典蓝牙串口模组。
  * 前提：已在系统蓝牙完成配对；此处列出已配对设备并直连 RFCOMM。
+ * 注意：spp 不在 @kit.ConnectivityKit 导出列表中，直接从 @ohos.bluetooth.spp 引入。
  */
-import { connection, spp } from '@kit.ConnectivityKit';
+import { connection } from '@kit.ConnectivityKit';
+import spp from '@ohos.bluetooth.spp';
 
 const SPP_UUID: string = '00001101-0000-1000-8000-00805f9b34fb';
 
@@ -20,7 +22,7 @@ export class SppTransport {
   /** 列出系统已配对的经典蓝牙设备 */
   async listPaired(): Promise<PairedDevice[]> {
     const out: PairedDevice[] = [];
-    const devices: Array<connection.BondedDevice> = await connection.getPairedDevices();
+    const devices = await connection.getPairedDevices();
     for (const d of devices) {
       const item: PairedDevice = {
         deviceId: d.deviceId,
@@ -52,7 +54,7 @@ export class SppTransport {
       }
     });
 
-    // 断连探测：写一次空包不可靠，此处依赖写失败 + 轮询超时暴露断线
+    // 断连探测依赖写失败 + 轮询超时暴露
     void onDisconnect;
   }
 
