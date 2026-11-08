@@ -411,13 +411,13 @@ struct Index {
         }
 
         Row({ space: 10 }) {
-          this.numField('时', this.hour, (): number => this.hour, (v: number): void => {
+          this.numField('时', (): number => this.hour, (v: number): void => {
             this.hour = v;
           })
-          this.numField('分', this.minute, (): number => this.minute, (v: number): void => {
+          this.numField('分', (): number => this.minute, (v: number): void => {
             this.minute = v;
           })
-          this.numField('秒', this.second, (): number => this.second, (v: number): void => {
+          this.numField('秒', (): number => this.second, (v: number): void => {
             this.second = v;
           })
         }
@@ -452,7 +452,7 @@ struct Index {
   }
 
   @Builder
-  numField(label: string, label0: string, getV: () => number, setV: (v: number) => void) {
+  numField(label: string, getV: () => number, setV: (v: number) => void) {
     Column({ space: 4 }) {
       Text(label).fontSize(10).fontColor(TEXT3)
       Row() {
@@ -521,7 +521,7 @@ struct Index {
         }
         .width('100%')
         .height(200)
-        .alignContent(Alignment.Bottom)
+        .justifyContent(FlexAlign.End)
       }
       .width('100%')
     }
