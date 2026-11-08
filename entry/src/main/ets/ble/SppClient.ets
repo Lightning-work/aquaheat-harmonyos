@@ -53,12 +53,9 @@ export class SppTransport {
       });
     });
 
-    socket.on('sppRead', (data: socket.SppReadData) => {
-      if (data.clientId === this.socketId && this.readHandler !== null) {
-        const ab: ArrayBuffer = data.data;
-        if (ab.byteLength > 0) {
-          this.readHandler(new Uint8Array(ab));
-        }
+    socket.on('sppRead', this.socketId, (ab: ArrayBuffer) => {
+      if (ab.byteLength > 0 && this.readHandler !== null) {
+        this.readHandler(new Uint8Array(ab));
       }
     });
 
